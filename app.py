@@ -1,40 +1,65 @@
 from flask import Flask, request, jsonify
 import pickle
-
-# Load model and vectorizer
-model = pickle.load(open("model.pkl", "rb"))
-vectorizer = pickle.load(open("vectorizer.pkl", "rb"))
+import os
 
 app = Flask(__name__)
 
-# ✅ HOME ROUTE (VERY IMPORTANT FOR RENDER)
+# =========================
+# LOAD MODEL & VECTORIZER
+# =========================
+try:
+    model = pickle.load(open("model.pkl", "rb"))
+    vectorizer = pickle.load(open("vectorizer.pkl", "rb"))
+    print("✅ Model loaded successfully")
+except Exception as e:
+    print("❌ Error loading model:", e)
+
+
+# =========================
+# HOME ROUTE
+# =========================
 @app.route("/")
 def home():
     return "TrustGuard AI API running 🚀"
 
-# ✅ PREDICT ROUTE
+
+# =========================
+# PREDICT ROUTE
+# =========================
 @app.route("/predict", methods=["POST"])
 def predict():
-    data = request.get_json()
+    try:
+        data = request.get_json()
 
-    if "text" not in data:
-        return jsonify({"error": "No text provided"}), 400
+        if not data or "text" not in data:
+            return jsonify({"error": "No text provided"}), 400
 
-    text = data["text"]
+        text = data["text"]
 
-    # Transform input
-    vector = vectorizer.transform([text])
+        # Transform input
+        vector = vectorizer.transform([text])
 
-    # Predict
-    prediction = model.predict(vector)[0]
-    confidence = max(model.predict_proba(vector)[0])
+        # Prediction
+        prediction_num = model.predict(vector)[0]
+        confidence = max(model.predict_proba(vector)[0])
 
-    return jsonify({
-        "prediction": str(prediction),
-        "confidence": float(confidence)
-    })
+        # Convert to readable output
+        prediction = "spam" if prediction_num == 1 else "ham"
+
+        return jsonify({
+            "prediction": prediction,
+            "confidence": float(confidence)
+        })
+
+    except Exception as e:
+        return jsonify({
+            "error": str(e)
+        }), 500
 
 
-# ✅ RUN APP
+# =========================
+# RUN APP (FOR LOCAL + RENDER)
+# =========================
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
