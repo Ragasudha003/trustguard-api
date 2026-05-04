@@ -1,11 +1,11 @@
+import os
 from flask import Flask, request, jsonify
-import joblib
+import pickle
 
 app = Flask(__name__)
 
-# Load model & vectorizer
-model = joblib.load("model.pkl")
-vectorizer = joblib.load("vectorizer.pkl")
+model = pickle.load(open("model.pkl", "rb"))
+vectorizer = pickle.load(open("vectorizer.pkl", "rb"))
 
 @app.route("/")
 def home():
@@ -26,4 +26,5 @@ def predict():
     })
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
