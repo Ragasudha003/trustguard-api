@@ -8,9 +8,14 @@ app = Flask(__name__)
 # LOAD MODEL & VECTORIZER
 # =========================
 try:
-    model = pickle.load(open("model.pkl", "rb"))
-    vectorizer = pickle.load(open("vectorizer.pkl", "rb"))
-    print("✅ Model loaded successfully")
+    with open("model.pkl", "rb") as f:
+        model = pickle.load(f)
+
+    with open("vectorizer.pkl", "rb") as f:
+        vectorizer = pickle.load(f)
+
+    print("✅ Model and vectorizer loaded successfully")
+
 except Exception as e:
     print("❌ Error loading model:", e)
 
@@ -31,19 +36,20 @@ def predict():
     try:
         data = request.get_json()
 
+        # Validate input
         if not data or "text" not in data:
             return jsonify({"error": "No text provided"}), 400
 
         text = data["text"]
 
-        # Transform input
+        # Transform text
         vector = vectorizer.transform([text])
 
-        # Prediction
+        # Predict
         prediction_num = model.predict(vector)[0]
         confidence = max(model.predict_proba(vector)[0])
 
-        # Convert to readable output
+        # Convert output
         prediction = "spam" if prediction_num == 1 else "ham"
 
         return jsonify({
@@ -58,7 +64,7 @@ def predict():
 
 
 # =========================
-# RUN APP (FOR LOCAL + RENDER)
+# RUN APP (Render compatible)
 # =========================
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
